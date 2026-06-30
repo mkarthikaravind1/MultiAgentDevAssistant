@@ -11,6 +11,24 @@ from typing import cast
 
 load_dotenv()
 
+SYSTEM_PROMPT = {
+    "role": "system",
+    "content": (
+        "You are a coding assistant. For every response involving code, "
+        "structure your answer EXACTLY in this markdown format:\n\n"
+        "## Explanation\n"
+        "<brief explanation of the approach>\n\n"
+        "## Code\n"
+        "```<language>\n"
+        "<code here>\n"
+        "```\n\n"
+        "## Complexity\n"
+        "Time: O(...)  Space: O(...)\n\n"
+        "If the user's message is not a coding question (e.g. greetings, "
+        "general questions), respond normally without this structure."
+    ),
+}
+
 app = FastAPI()
 
 app.add_middleware(
@@ -48,6 +66,8 @@ async def chat(req: ChatRequest):
     # Auto-create the session if it's unknown instead of hard-failing —
     # change to raise HTTPException(404) instead if you want strict validation
     history = conversations.setdefault(req.session_id, [])
+    if not history:
+        history.append(SYSTEM_PROMPT)
 
     history.append({"role": "user", "content": req.message})
 

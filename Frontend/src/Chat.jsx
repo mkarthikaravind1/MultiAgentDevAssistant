@@ -1,6 +1,57 @@
 import { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE;
+
+function CodeBlock({ language, value }) {
+    function handleCopy() {
+        navigator.clipboard.writeText(value);
+    }
+    function handleDownload() {
+        const ext = { python: "py", javascript: "js", jsx: "jsx", java: "java", cpp: "cpp", c: "c" }[language] || "txt";
+        const blob = new Blob([value], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `snippet.${ext}`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+    return (
+        <div style={{ position: "relative", margin: "8px 0" }}>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginBottom: 4 }}>
+                <button onClick={handleCopy} style={codeBtnStyle}>Copy</button>
+                <button onClick={handleDownload} style={codeBtnStyle}>Download</button>
+            </div>
+            <SyntaxHighlighter
+                language={language}
+                style={oneDark}
+                wrapLongLines={true}
+                customStyle={{
+                    borderRadius: 8,
+                    fontSize: 13,
+                    maxWidth: "100%",
+                    overflowX: "hidden",
+                }}
+                codeTagProps={{ style: { whiteSpace: "pre-wrap", wordBreak: "break-word" } }}
+            >
+                {value}
+            </SyntaxHighlighter>
+        </div>
+    );
+}
+
+const codeBtnStyle = {
+    fontSize: 11,
+    padding: "3px 8px",
+    borderRadius: 6,
+    border: "1px solid #ccc",
+    background: "#fff",
+    cursor: "pointer",
+};
 
 export default function Chat() {
     const [sessionId, setSessionId] = useState(null);
@@ -39,8 +90,9 @@ export default function Chat() {
         }
 
         setError(null);
-        const userMessage = { role: "user", content: trimmed };
-        setMessages((prev) => [...prev, userMessage, { role: "assistant", content: "" }]);
+        const userMessage = { id: crypto.randomUUID(), role: "user", content: trimmed };
+        const assistantMessage = { id: crypto.randomUUID(), role: "assistant", content: "" };
+        setMessages((prev) => [...prev, userMessage, assistantMessage]);
         setInput("");
         setIsStreaming(true);
 
@@ -68,10 +120,19 @@ export default function Chat() {
 
                 setMessages((prev) => {
                     const updated = [...prev];
-                    updated[updated.length - 1] = { role: "assistant", content: accumulated };
+                    const lastIdx = updated.length - 1;
+                    updated[lastIdx] = { ...updated[lastIdx], content: accumulated };
                     return updated;
                 });
             }
+
+            accumulated += decoder.decode(); // flush remaining buffered bytes
+            setMessages((prev) => {
+                const updated = [...prev];
+                const lastIdx = updated.length - 1;
+                updated[lastIdx] = { ...updated[lastIdx], content: accumulated };
+                return updated;
+            });
 
             // Surface backend-side stream errors (sent as plain text, e.g. "[error: ...]")
             if (accumulated.startsWith("\n[error:") || accumulated.startsWith("[error:")) {
@@ -108,13 +169,32 @@ export default function Chat() {
                 )}
                 {messages.map((msg, i) => (
                     <div
-                        key={i}
+                        key={msg.id}
                         style={{
                             ...styles.bubble,
                             ...(msg.role === "user" ? styles.userBubble : styles.assistantBubble),
                         }}
                     >
-                        {msg.content || (isStreaming && i === messages.length - 1 ? "…" : "")}
+                        {msg.role === "assistant" ? (
+                            <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                    code({ inline, className, children }) {
+                                        const match = /language-(\w+)/.exec(className || "");
+                                        const value = String(children).replace(/\n$/, "");
+                                        return !inline && match ? (
+                                            <CodeBlock language={match[1]} value={value} />
+                                        ) : (
+                                            <code style={{ background: "#e8e8e8", padding: "1px 4px", borderRadius: 4 }}>{value}</code>
+                                        );
+                                    },
+                                }}
+                            >
+                                {msg.content || (isStreaming && i === messages.length - 1 ? "…" : "")}
+                            </ReactMarkdown>
+                        ) : (
+                            msg.content
+                        )}
                     </div>
                 ))}
                 <div ref={bottomRef} />
@@ -125,7 +205,11 @@ export default function Chat() {
             <div style={styles.inputRow}>
                 <textarea
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={(e) => {
+                        setInput(e.target.value);
+                        e.target.style.height = "auto";
+                        e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`;
+                    }}
                     onKeyDown={handleKeyDown}
                     placeholder="Type a message…"
                     rows={1}
@@ -177,7 +261,7 @@ const styles = {
     },
     emptyState: { color: "#999", fontSize: 14, textAlign: "center", marginTop: 40 },
     bubble: {
-        maxWidth: "75%",
+        maxWidth: "90%",
         padding: "10px 14px",
         borderRadius: 14,
         fontSize: 14,
@@ -220,6 +304,9 @@ const styles = {
         fontSize: 14,
         fontFamily: "inherit",
         outline: "none",
+        maxHeight: 150,
+        overflowY: "auto",
+        lineHeight: 1.4,
     },
     sendButton: {
         padding: "0 18px",

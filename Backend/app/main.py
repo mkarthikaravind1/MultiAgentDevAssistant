@@ -1,3 +1,4 @@
+#main.py
 import os
 import uuid
 from fastapi import FastAPI, HTTPException
@@ -8,6 +9,7 @@ from groq import Groq, APIError
 from dotenv import load_dotenv
 from groq.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 from typing import cast
+from app.routers import codebase
 
 load_dotenv()
 
@@ -37,6 +39,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(codebase.router)
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
@@ -115,3 +119,4 @@ async def delete_session(session_id: str):
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+

@@ -53,7 +53,7 @@ export default function CodebasePanel({ sessionId }) {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 0 }}>
+    <div style={{ display: 'flex',flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden', gap: 0,}}>
       {/* Upload zone */}
       <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
         <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -135,7 +135,8 @@ export default function CodebasePanel({ sessionId }) {
       </div>
 
       {/* Results */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}> */}
+      <div style={{ flex:1, minHeight: 0, overflowY: 'auto', padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 16, display:'block' }}>
         {results.length === 0 && (
           <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8' }}>
             <FolderSearchEmpty />
@@ -161,7 +162,23 @@ export default function CodebasePanel({ sessionId }) {
                   View source context
                 </button>
                 {expandedSource === i && (
-                  <pre style={{ padding: '0 16px 12px', fontSize: 11, color: '#64748B', fontFamily: '"JetBrains Mono", monospace', whiteSpace: 'pre-wrap', lineHeight: 1.6, borderTop: '1px solid #F1F5F9', paddingTop: 10 }}>
+                  // <pre style={{ padding: '0 16px 12px', fontSize: 11, color: '#64748B', fontFamily: '"JetBrains Mono", monospace', whiteSpace: 'pre-wrap', lineHeight: 1.6, borderTop: '1px solid #F1F5F9', paddingTop: 10 }}>
+                  //   {r.sources}
+                  // </pre>
+                  <pre
+                    style={{
+                      padding: '10px 16px',
+                      fontSize: 11,
+                      color: '#64748B',
+                      fontFamily: '"JetBrains Mono", monospace',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      lineHeight: 1.6,
+                      borderTop: '1px solid #F1F5F9',
+                      maxHeight: 250,
+                      overflow: 'auto',
+                    }}
+                  >
                     {r.sources}
                   </pre>
                 )}

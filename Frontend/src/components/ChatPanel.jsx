@@ -58,9 +58,10 @@ export default function ChatPanel({ sessionId }) {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div style={{
+      display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflow: 'hidden'}}>
       {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px' }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '0 24px' }}>
         {messages.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 32, paddingBottom: 40 }}>
             <div style={{ textAlign: 'center' }}>

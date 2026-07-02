@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from groq.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 from typing import cast
 from app.routers import codebase
+from app.routers import tools
 
 load_dotenv()
 
@@ -41,6 +42,7 @@ app.add_middleware(
 )
 
 app.include_router(codebase.router)
+app.include_router(tools.router)
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 

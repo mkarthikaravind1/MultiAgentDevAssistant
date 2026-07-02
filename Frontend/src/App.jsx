@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar';
 import ModeSwitcher from './components/ModeSwitcher';
 import ChatPanel from './components/ChatPanel';
 import CodebasePanel from './components/CodebasePanel';
+import ToolsPanel from './components/ToolsPanel';
 import { createSession, deleteSession } from './utils/api';
 import './index.css';
 
@@ -11,7 +12,7 @@ let sessionCounter = 1;
 export default function App() {
   const [sessions, setSessions] = useState([]);
   const [activeId, setActiveId] = useState(null);
-  const [mode, setMode] = useState('chat'); // 'chat' | 'codebase'
+  const [mode, setMode] = useState('chat'); // 'chat' | 'codebase' | 'tools'
 
   const newSession = useCallback(async () => {
     try {
@@ -27,7 +28,7 @@ export default function App() {
   useEffect(() => { newSession(); }, []);
 
   const handleDelete = async (id) => {
-    await deleteSession(id).catch(() => {});
+    await deleteSession(id).catch(() => { });
     setSessions(prev => prev.filter(s => s.id !== id));
     if (activeId === id) {
       const remaining = sessions.filter(s => s.id !== id);
@@ -37,7 +38,7 @@ export default function App() {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
       <Sidebar
         sessions={sessions}
         activeId={activeId}
@@ -47,7 +48,7 @@ export default function App() {
       />
 
       {/* Main content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#fff' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#fff' , minHeight:0 ,}}>
         {/* Top bar */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -66,9 +67,10 @@ export default function App() {
         </div>
 
         {/* Panel */}
-        <div style={{ flex: 1, overflow: 'hidden' }}>
+        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {activeId && mode === 'chat' && <ChatPanel key={activeId + '-chat'} sessionId={activeId} />}
           {activeId && mode === 'codebase' && <CodebasePanel key={activeId + '-rag'} sessionId={activeId} />}
+          {activeId && mode === 'tools' && <ToolsPanel key={activeId + '-tools'} sessionId={activeId} />}
           {!activeId && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94A3B8' }}>
               Creating session…

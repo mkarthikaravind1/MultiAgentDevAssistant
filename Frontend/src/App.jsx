@@ -7,6 +7,7 @@ import ToolsPanel from './components/ToolsPanel';
 import { createSession, deleteSession } from './utils/api';
 import './index.css';
 import PlannerPanel from './components/PlannerPanel';
+import MultiAgentPanel from './components/MultiAgentPanel';
 
 let sessionCounter = 1;
 
@@ -73,6 +74,7 @@ export default function App() {
           {activeId && mode === 'codebase' && <CodebasePanel key={activeId + '-rag'} sessionId={activeId} />}
           {activeId && mode === 'tools' && <ToolsPanel key={activeId + '-tools'} sessionId={activeId} />}
           {mode === 'planner' && <PlannerPanel key="planner" />}
+          {mode === 'multi-agent' && activeId && <MultiAgentPanel key={activeId + '-multiagent'} sessionId={activeId} />}
           {!activeId && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94A3B8' }}>
               Creating session…

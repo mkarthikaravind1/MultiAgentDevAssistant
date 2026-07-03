@@ -25,7 +25,7 @@
 //     </div>
 //   );
 // }
-import { MessageCircle, FolderSearch, Wrench, GitBranch } from 'lucide-react';
+import { MessageCircle, FolderSearch, Wrench, GitBranch, Bot } from 'lucide-react';
 
 export default function ModeSwitcher({ mode, onChange }) {
   return (
@@ -38,6 +38,7 @@ export default function ModeSwitcher({ mode, onChange }) {
         { id: 'codebase', label: 'Codebase RAG', Icon: FolderSearch },
         { id: 'tools', label: 'Tools', Icon: Wrench },
         { id: 'planner', label: 'Planner', Icon: GitBranch },
+        { id: 'multi-agent', label: 'Multi-Agent', Icon: Bot },
       ].map(({ id, label, Icon }) => (
         <button key={id} onClick={() => onChange(id)} style={{
           padding: '6px 16px', borderRadius: 7, border: 'none', cursor: 'pointer',

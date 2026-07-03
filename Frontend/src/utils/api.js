@@ -104,3 +104,33 @@ export async function streamPlanner(task, onEvent) {
     }
   }
 }
+
+export async function streamMultiAgent(sessionId, task, onEvent) {
+  const r = await fetch(`${BASE}/multi-agent/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: sessionId, task }),
+  });
+  if (!r.ok) { onEvent({ type: 'error', data: 'Request failed' }); return; }
+
+  const reader = r.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const blocks = buf.split('\n\n');
+    buf = blocks.pop();
+    for (const block of blocks) {
+      const lines = block.trim().split('\n');
+      const eventLine = lines.find(l => l.startsWith('event:'));
+      const dataLine  = lines.find(l => l.startsWith('data:'));
+      if (!eventLine || !dataLine) continue;
+      const type = eventLine.replace('event:', '').trim();
+      const data = dataLine.replace('data:', '').trim();
+      onEvent({ type, data });
+    }
+  }
+}

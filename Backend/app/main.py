@@ -9,7 +9,7 @@ from groq import Groq, APIError
 from dotenv import load_dotenv
 from groq.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 from typing import cast
-from app.routers import codebase, tools, planner
+from app.routers import codebase, tools, planner, multi_agent
 
 load_dotenv()
 
@@ -43,6 +43,7 @@ app.add_middleware(
 app.include_router(codebase.router)
 app.include_router(tools.router)
 app.include_router(planner.router)
+app.include_router(multi_agent.router)
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 

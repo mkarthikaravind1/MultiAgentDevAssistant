@@ -104,9 +104,16 @@ def git_status(session_id: str) -> str:
 TOOLS_SCHEMA = [
     {"type":"function","function":{"name":"read_file","description":"Read a file in the codebase.","parameters":{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}}},
     {"type":"function","function":{"name":"write_file","description":"Write/overwrite a file in the codebase.","parameters":{"type":"object","properties":{"path":{"type":"string"},"content":{"type":"string"}},"required":["path","content"]}}},
-    {"type":"function","function":{"name":"search_folder","description":"Search files by glob pattern.","parameters":{"type":"object","properties":{"pattern":{"type":"string"},"directory":{"type":"string","default":"."}},"required":["pattern"]}}},
+    {"type":"function","function":{"name":"search_folder","description":"List or search files in the codebase by glob pattern. Use '*' to list all files in a directory, '*.py' for all Python files, etc. Use this when the user wants to explore or list files.","parameters":{"type":"object","properties":{"pattern":{"type":"string"},"directory":{"type":"string","default":"."}},"required":["pattern"]}}},
     {"type":"function","function":{"name":"run_command","description":"Run a shell command in the codebase dir.","parameters":{"type":"object","properties":{"command":{"type":"string"}},"required":["command"]}}},
     {"type":"function","function":{"name":"git_status","description":"Get git status and recent commits.","parameters":{"type":"object","properties":{},"required":[]}}},
+    {"type":"function","function":{
+        "name":"list_directory",
+        "description":"List all files and subdirectories inside a given folder in the codebase. Use this when the user wants to see what's in a directory.",
+        "parameters":{"type":"object","properties":{
+            "path":{"type":"string","description":"Relative directory path, e.g. 'src' or '.' for root","default":"."}
+        },"required":[]}
+    }},
 ]
 
 def dispatch_tool(session_id: str, name: str, args: dict) -> str:
@@ -115,4 +122,21 @@ def dispatch_tool(session_id: str, name: str, args: dict) -> str:
     if name == "search_folder":  return search_folder(session_id, args.get("pattern","*"), args.get("directory","."))
     if name == "run_command":    return run_command(session_id, args.get("command",""))
     if name == "git_status":     return git_status(session_id)
+    if name == "list_directory": return list_directory(session_id, args.get("path", "."))
     return f"Error: unknown tool '{name}'"
+
+def list_directory(session_id: str, path: str = ".") -> str:
+    root = _session_dir(session_id)
+    full = os.path.realpath(os.path.join(root, path))
+    if not full.startswith(os.path.realpath(root)):
+        return "Error: path traversal detected"
+    if not os.path.isdir(full):
+        return f"Error: directory not found: {path}"
+    try:
+        entries = []
+        for entry in sorted(os.scandir(full), key=lambda e: (not e.is_dir(), e.name)):
+            prefix = "[DIR] " if entry.is_dir() else "[FILE]"
+            entries.append(f"{prefix} {entry.name}")
+        return "\n".join(entries) if entries else f"Directory '{path}' is empty."
+    except Exception as e:
+        return f"Error: {e}"

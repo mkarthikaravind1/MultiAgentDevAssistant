@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Loader, Zap } from 'lucide-react';
+import { Send, Loader } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import { streamChat } from '../utils/api';
 
@@ -65,8 +65,13 @@ export default function ChatPanel({ sessionId }) {
         {messages.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 32, paddingBottom: 40 }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ width: 56, height: 56, borderRadius: 16, background: '#5B6AF0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
-                <Zap size={26} color="#fff" />
+              <div style={{ width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg, #2563eb, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', boxShadow: '0 4px 14px rgba(99,102,241,0.35)' }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                  stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="16 18 22 12 16 6" />
+                  <polyline points="8 6 2 12 8 18" />
+                  <circle cx="12" cy="12" r="2" fill="white" stroke="none" />
+                </svg>
               </div>
               <div style={{ fontSize: 20, fontWeight: 600, color: '#1A1A2E', marginBottom: 6 }}>Multi-Agent Dev Assistant</div>
               <div style={{ fontSize: 13.5, color: '#6B7280', maxWidth: 320 }}>Your AI pair programmer. Ask anything about code — algorithms, debugging, architecture.</div>

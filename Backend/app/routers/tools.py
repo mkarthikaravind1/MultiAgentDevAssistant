@@ -31,7 +31,7 @@ async def tool_chat(req: ToolChatRequest):
         # Agentic loop — max 8 iterations to prevent runaway
         for _ in range(8):
             response = client.chat.completions.create(
-                model="llama-3.1-8b-instant",
+                model="llama-3.3-70b-versatile",
                 messages=cast(list[ChatCompletionMessageParam], messages),
                 tools=cast(list[ChatCompletionToolParam], TOOLS_SCHEMA), 
                 tool_choice="auto",

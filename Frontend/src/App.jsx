@@ -6,6 +6,7 @@ import CodebasePanel from './components/CodebasePanel';
 import ToolsPanel from './components/ToolsPanel';
 import { createSession, deleteSession } from './utils/api';
 import './index.css';
+import PlannerPanel from './components/PlannerPanel';
 
 let sessionCounter = 1;
 
@@ -71,6 +72,7 @@ export default function App() {
           {activeId && mode === 'chat' && <ChatPanel key={activeId + '-chat'} sessionId={activeId} />}
           {activeId && mode === 'codebase' && <CodebasePanel key={activeId + '-rag'} sessionId={activeId} />}
           {activeId && mode === 'tools' && <ToolsPanel key={activeId + '-tools'} sessionId={activeId} />}
+          {mode === 'planner' && <PlannerPanel key="planner" />}
           {!activeId && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94A3B8' }}>
               Creating session…

@@ -10,17 +10,27 @@ export default function Sidebar({ sessions, activeId, onNew, onSelect, onDelete 
       height: '100%', flexShrink: 0,
     }}>
       {/* Logo */}
-      <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: 8, background: 'var(--primary)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Cpu size={17} color="#fff" />
+      // AFTER:
+      <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: 12, flexShrink: 0,
+          background: 'linear-gradient(135deg, #2563eb, #6366f1)',
+          boxShadow: '0 4px 14px rgba(99,102,241,0.35)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="16 18 22 12 16 6" />
+            <polyline points="8 6 2 12 8 18" />
+            <circle cx="12" cy="12" r="2" fill="white" stroke="none" />
+          </svg>
+        </div>
+        <div>
+          <div style={{ color: '#fff', fontWeight: 700, fontSize: 14, letterSpacing: '-0.01em', fontFamily: '"JetBrains Mono", monospace', lineHeight: 1.2 }}>
+            Dev<span style={{ color: '#818cf8' }}>Assistant</span>
           </div>
-          <div>
-            <div style={{ color: '#fff', fontWeight: 600, fontSize: 13, letterSpacing: '0.01em', fontFamily: '"JetBrains Mono", monospace' }}>DevAssistant</div>
-            <div style={{ color: '#5B6AF0', fontSize: 10, fontFamily: '"JetBrains Mono", monospace', letterSpacing: '0.06em' }}>MULTI-AGENT</div>
+          <div style={{ color: '#34d399', fontSize: 9.5, fontFamily: '"JetBrains Mono", monospace', letterSpacing: '0.1em', marginTop: 2, fontWeight: 600 }}>
+            • MULTI-AGENT
           </div>
         </div>
       </div>
@@ -42,7 +52,7 @@ export default function Sidebar({ sessions, activeId, onNew, onSelect, onDelete 
 
       {/* Session list */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 8px' }}>
-        <div style={{ color: '#4A4A6A', fontSize: 10, fontFamily: '"JetBrains Mono", monospace', letterSpacing: '0.08em', padding: '8px 8px 4px', textTransform: 'uppercase' }}>Sessions</div>
+        <div style={{ color: '#94a3b8', fontSize: 10, fontFamily: '"JetBrains Mono", monospace', letterSpacing: '0.08em', padding: '8px 8px 4px', textTransform: 'uppercase' }}>Sessions</div>
         {sessions.length === 0 && (
           <div style={{ color: '#4A4A6A', fontSize: 12, padding: '12px 8px', textAlign: 'center' }}>No sessions yet</div>
         )}
@@ -79,8 +89,37 @@ export default function Sidebar({ sessions, activeId, onNew, onSelect, onDelete 
       </div>
 
       {/* Footer */}
-      <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: 11, color: '#3A3A5A', fontFamily: '"JetBrains Mono", monospace' }}>
-        FastAPI · Groq · ChromaDB
+      {/* Footer */}
+      <div style={{
+        borderTop: '1px solid #1E2238',
+        padding: '12px 14px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 6 }}>
+          {[
+            { label: 'FastAPI', color: '#10B981' },
+            { label: 'Groq', color: '#F59E0B' },
+            { label: 'Chroma', color: '#6366F1' },
+          ].map(({ label, color }) => (
+            <div key={label} style={{
+              display: 'flex', alignItems: 'center',
+              background: '#1A1D2E', border: '1px solid #2A2F45',
+              borderRadius: 4, padding: '3px 7px',
+              fontSize: 10, color: '#94A3B8',
+              fontFamily: '"JetBrains Mono", monospace',
+              userSelect: 'none',
+            }}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: color, marginRight: 5, flexShrink: 0, display: 'inline-block' }} />
+              {label}
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: 9, color: '#3A3A5A', fontFamily: '"JetBrains Mono", monospace', letterSpacing: '0.02em' }}>
+          © 2026 DevAssistant
+        </div>
       </div>
     </aside>
   );

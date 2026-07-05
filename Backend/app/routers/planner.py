@@ -5,10 +5,8 @@ from app.services.planner import run_planner_stream
 
 router = APIRouter(prefix="/planner", tags=["planner"])
 
-
 class PlannerRequest(BaseModel):
     task: str = Field(..., min_length=5, max_length=2000)
-
 
 @router.post("/plan")
 async def plan_task(req: PlannerRequest):

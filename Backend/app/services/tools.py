@@ -1,7 +1,7 @@
 #tools.py
 import os, subprocess
-from pathlib import Path
 import fnmatch
+import shlex
 
 CODEBASE_ROOT = "./tmp_codebase"
 FALLBACK_ROOT = "./tmp_sandbox"
@@ -78,7 +78,7 @@ def run_command(session_id: str, command: str) -> str:
     if first in BLOCKED_COMMANDS:
         return f"Error: '{first}' is not allowed"
     try:
-        r = subprocess.run(command, shell=True, cwd=root, capture_output=True, text=True, timeout=15)
+        r = subprocess.run(shlex.split(command), shell=False, cwd=root, capture_output=True, text=True, timeout=15)
         out = (r.stdout + ("\n[stderr]\n" + r.stderr if r.stderr else "")).strip()
         if not out:
             return f"(exited {r.returncode}, no output)"

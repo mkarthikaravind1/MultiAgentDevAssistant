@@ -5,11 +5,11 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from groq import Groq
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 from app.services.tools import TOOLS_SCHEMA, dispatch_tool
 from groq.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam 
 
-load_dotenv()
+#load_dotenv()
 router = APIRouter(prefix="/tools", tags=["tools"])
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
@@ -69,8 +69,12 @@ async def tool_chat(req: ToolChatRequest):
                 name = tc.function.name
                 try:
                     args = json.loads(tc.function.arguments)
-                except Exception:
-                    args = {}
+                except json.JSONDecodeError as e:
+                    yield json.dumps({
+                        "type": "error",
+                        "content": f"Invalid JSON arguments for tool '{name}': {str(e)}"
+                    }) + "\n"
+                    continue
 
                 # Notify frontend: tool is being called
                 yield json.dumps({"type": "tool_call", "tool_call_id": tc.id, "name": name, "args": args}) + "\n"

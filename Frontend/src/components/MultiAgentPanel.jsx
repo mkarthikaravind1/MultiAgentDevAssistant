@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Bot, Loader2, AlertCircle, ChevronRight, CheckCircle2, FileCode2, Brain, Building2, Eye } from 'lucide-react';
+import { Bot, Loader2, AlertCircle, ChevronRight, CheckCircle2, FileCode2, Brain, Building2, Eye, Search, ClipboardList } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { streamMultiAgent } from '../utils/api';
 
 const TYPE_COLORS = {
@@ -11,13 +13,34 @@ const TYPE_COLORS = {
 };
 
 const AGENT_META = {
+    research: { label: 'Research', Icon: Search, color: '#0369A1', bg: '#F0F9FF', border: '#BAE6FD' },
     planner: { label: 'Planner', Icon: Brain, color: '#4F46E5', bg: '#EEF2FF', border: '#C7D2FE' },
     architect: { label: 'Architect', Icon: Building2, color: '#0284C7', bg: '#F0F9FF', border: '#BAE6FD' },
     coder: { label: 'Coder', Icon: FileCode2, color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
     reviewer: { label: 'Reviewer', Icon: Eye, color: '#9333EA', bg: '#FDF4FF', border: '#E9D5FF' },
+    summary: { label: 'Summary', Icon: ClipboardList, color: '#B45309', bg: '#FFFBEB', border: '#FDE68A' },
 };
 
+const AGENT_ORDER = ['research', 'planner', 'architect', 'coder', 'reviewer', 'summary'];
+
 // ── Sub-renderers ─────────────────────────────────────────────────────────────
+
+function ResearchResult({ data }) {
+    return (
+        <div style={{
+            marginTop: 10, padding: '10px 14px', borderRadius: 8,
+            background: data.has_context ? '#F0F9FF' : '#F8FAFF',
+            border: `1px solid ${data.has_context ? '#BAE6FD' : '#E2E8F0'}`,
+            fontSize: 13, color: data.has_context ? '#0369A1' : '#64748B',
+            display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+            {data.has_context
+                ? <CheckCircle2 size={14} color="#0369A1" />
+                : <AlertCircle size={14} color="#94A3B8" />}
+            {data.message}
+        </div>
+    );
+}
 
 function PlannerResult({ subtasks }) {
     return (
@@ -83,102 +106,156 @@ function ArchitectResult({ architecture }) {
     );
 }
 
-function CoderResult({ written_files }) {
+function CoderResult({ written_files, iteration }) {
+    const successCount = written_files.filter(f => !f.result.startsWith('Error')).length;
+    const errorCount = written_files.length - successCount;
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10 }}>
-            {written_files.map((f, i) => {
-                const ok = !f.result.startsWith('Error');
-                return (
-                    <div key={i} style={{
-                        display: 'flex', alignItems: 'center', gap: 10,
-                        padding: '7px 12px', borderRadius: 7,
-                        background: ok ? '#F0FDF4' : '#FFF1F2',
-                        border: `1px solid ${ok ? '#BBF7D0' : '#FECDD3'}`,
-                    }}>
-                        <CheckCircle2 size={13} color={ok ? '#16A34A' : '#E11D48'} style={{ flexShrink: 0 }} />
-                        <span style={{ fontSize: 12, fontFamily: '"JetBrains Mono", monospace', color: '#1E293B', flex: 1 }}>{f.path}</span>
-                        <span style={{ fontSize: 11, color: ok ? '#16A34A' : '#E11D48' }}>{f.result}</span>
-                    </div>
-                );
-            })}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+            {iteration > 1 && (
+                <div style={{
+                    fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 20,
+                    background: '#FFF7ED', color: '#EA580C', border: '1px solid #FED7AA',
+                    display: 'inline-flex', alignItems: 'center', gap: 5, alignSelf: 'flex-start',
+                }}>
+                    🔁 Fix attempt {iteration}
+                </div>
+            )}
+            <div style={{ display: 'flex', gap: 10, fontSize: 12 }}>
+                <span style={{ color: '#16A34A', fontWeight: 600 }}>✅ {successCount} written</span>
+                {errorCount > 0 && <span style={{ color: '#E11D48', fontWeight: 600 }}>❌ {errorCount} skipped</span>}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                {written_files.map((f, i) => {
+                    const ok = !f.result.startsWith('Error');
+                    return (
+                        <div key={i} style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '6px 12px', borderRadius: 7,
+                            background: ok ? '#F0FDF4' : '#FFF1F2',
+                            border: `1px solid ${ok ? '#BBF7D0' : '#FECDD3'}`,
+                            minWidth: 0,
+                        }}>
+                            <CheckCircle2 size={12} color={ok ? '#16A34A' : '#E11D48'} style={{ flexShrink: 0 }} />
+                            <span style={{ fontSize: 12, fontFamily: '"JetBrains Mono", monospace', color: '#1E293B', flex: 1 }}>{f.path}</span>
+                            {/* <span style={{ fontSize: 11, color: ok ? '#16A34A' : '#E11D48', flexShrink: 0 }}>{f.result}</span> */}
+                            <span style={{
+                                fontSize: 11,
+                                color: ok ? '#16A34A' : '#E11D48',
+                                flex: ok ? '0 0 auto' : '1 1 0',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                minWidth: 0,
+                            }}>
+                                {f.result}
+                            </span>
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 }
 
-function ReviewerResult({ review }) {
+function ReviewerResult({ review, verdict }) {
+    const pass = verdict === 'pass';
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
+            <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '4px 12px', borderRadius: 20, alignSelf: 'flex-start',
+                background: pass ? '#F0FDF4' : '#FFF7ED',
+                border: `1px solid ${pass ? '#BBF7D0' : '#FED7AA'}`,
+                fontSize: 12, fontWeight: 600,
+                color: pass ? '#16A34A' : '#EA580C',
+            }}>
+                {pass ? <CheckCircle2 size={13} /> : <AlertCircle size={13} />}
+                Verdict: {pass ? 'Pass' : 'Needs Fix'}
+            </div>
+            <div style={{
+                padding: '12px 14px', background: '#FAFBFF',
+                borderRadius: 8, border: '1px solid #E2E8F0',
+                fontSize: 13, color: '#334155', lineHeight: 1.7,
+                whiteSpace: 'pre-wrap', fontFamily: 'inherit',
+            }}>
+                {review}
+            </div>
+        </div>
+    );
+}
+
+function SummaryResult({ summary }) {
     return (
         <div style={{
-            marginTop: 10, padding: '12px 14px',
-            background: '#FAFBFF', borderRadius: 8, border: '1px solid #E2E8F0',
+            marginTop: 10, padding: '14px 16px',
+            background: '#FFFBEB', borderRadius: 8,
+            border: '1px solid #FDE68A',
             fontSize: 13, color: '#334155', lineHeight: 1.7,
-            whiteSpace: 'pre-wrap', fontFamily: 'inherit',
         }}>
-            {review}
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{summary}</ReactMarkdown>
         </div>
     );
 }
 
 // ── Agent Card ────────────────────────────────────────────────────────────────
 
-function AgentCard({ agentKey, data, active }) {
+function AgentCard({ agentKey, data, isActive }) {
     const meta = AGENT_META[agentKey];
     if (!meta) return null;
     const { label, Icon, color, bg, border } = meta;
+    const isDone = data !== null;
 
     return (
         <div style={{
-            borderRadius: 12, border: `1px solid ${active ? border : '#E2E8F0'}`,
-            background: active ? bg : '#FAFBFF',
+            borderRadius: 12,
+            border: `1px solid ${isActive || isDone ? border : '#E2E8F0'}`,
+            background: isActive || isDone ? bg : '#FAFBFF',
             padding: '14px 16px', transition: 'all 0.2s',
         }}>
-            {/* Card header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{
                     width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-                    background: active ? color : '#E2E8F0',
+                    background: isActive || isDone ? color : '#E2E8F0',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     transition: 'background 0.2s',
                 }}>
-                    <Icon size={16} color={active ? '#fff' : '#94A3B8'} />
+                    <Icon size={16} color={isActive || isDone ? '#fff' : '#94A3B8'} />
                 </div>
-                <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: active ? color : '#94A3B8' }}>{label} Agent</div>
+                <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: isActive || isDone ? color : '#94A3B8' }}>
+                    {label} Agent
                 </div>
-                {active && data === null && (
-                    <Loader2 size={14} color={color} style={{ animation: 'spin 1s linear infinite' }} />
-                )}
-                {data !== null && (
-                    <CheckCircle2 size={16} color="#16A34A" />
-                )}
+                {isActive && !isDone && <Loader2 size={14} color={color} style={{ animation: 'spin 1s linear infinite' }} />}
+                {isDone && <CheckCircle2 size={16} color="#16A34A" />}
             </div>
 
-            {/* Card body — only shown when data arrives */}
+            {agentKey === 'research' && data && <ResearchResult data={data} />}
             {agentKey === 'planner' && data && <PlannerResult subtasks={data.subtasks} />}
             {agentKey === 'architect' && data && <ArchitectResult architecture={data.architecture} />}
-            {agentKey === 'coder' && data && <CoderResult written_files={data.written_files} />}
-            {agentKey === 'reviewer' && data && <ReviewerResult review={data.review} />}
+            {agentKey === 'coder' && data && <CoderResult written_files={data.written_files} iteration={data.iteration} />}
+            {agentKey === 'reviewer' && data && <ReviewerResult review={data.review} verdict={data.verdict} />}
+            {agentKey === 'summary' && data && <SummaryResult summary={data.summary} />}
         </div>
     );
 }
 
 // ── Main Panel ────────────────────────────────────────────────────────────────
 
-const AGENT_ORDER = ['planner', 'architect', 'coder', 'reviewer'];
-
 export default function MultiAgentPanel({ sessionId }) {
     const [task, setTask] = useState('');
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState('');
     const [error, setError] = useState('');
-    const [results, setResults] = useState({}); // { planner: data, architect: data, ... }
-    const [activeAgent, setActiveAgent] = useState(null); // currently running agent
+    const [activeAgent, setActiveAgent] = useState(null);
+
+    // Each agent can appear multiple times (coder re-runs), so store as array of {agentKey, data}
+    const [cards, setCards] = useState([]);
 
     const handleRun = async () => {
         if (!task.trim() || loading) return;
         setLoading(true);
         setError('');
         setStatus('');
-        setResults({});
+        setCards([]);
         setActiveAgent(null);
 
         await streamMultiAgent(sessionId, task.trim(), (event) => {
@@ -189,7 +266,8 @@ export default function MultiAgentPanel({ sessionId }) {
                     const parsed = JSON.parse(event.data);
                     const agent = parsed.agent;
                     setActiveAgent(agent);
-                    setResults(prev => ({ ...prev, [agent]: parsed }));
+                    // Append card — coder may appear twice
+                    setCards(prev => [...prev, { agentKey: agent, data: parsed }]);
                 } catch {
                     setError('Malformed agent result received.');
                 }
@@ -210,8 +288,6 @@ export default function MultiAgentPanel({ sessionId }) {
         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleRun();
     };
 
-    const hasResults = Object.keys(results).length > 0;
-
     return (
         <div style={{
             display: 'flex', flexDirection: 'column', height: '100%',
@@ -228,21 +304,21 @@ export default function MultiAgentPanel({ sessionId }) {
                 <span style={{
                     fontSize: 11, background: '#EEF2FF', color: '#5B6AF0',
                     border: '1px solid #C7D2FE', borderRadius: 20, padding: '2px 8px', fontWeight: 500,
-                }}>Phase 6</span>
+                }}>Phase 7</span>
             </div>
 
             {/* Pipeline indicator */}
             <div style={{
-                display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
+                display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
                 padding: '10px 14px', background: '#F8FAFF',
                 border: '1px solid #E2E8F0', borderRadius: 10, flexWrap: 'wrap',
             }}>
                 {AGENT_ORDER.map((key, i) => {
                     const meta = AGENT_META[key];
-                    const done = !!results[key];
+                    const done = cards.some(c => c.agentKey === key);
                     const active = activeAgent === key;
                     return (
-                        <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             <div style={{
                                 display: 'flex', alignItems: 'center', gap: 5,
                                 padding: '4px 10px', borderRadius: 20,
@@ -254,12 +330,10 @@ export default function MultiAgentPanel({ sessionId }) {
                             }}>
                                 <meta.Icon size={11} />
                                 {meta.label}
-                                {done && <CheckCircle2 size={11} color="#16A34A" />}
-                                {active && !done && <Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} />}
+                                {done && !active && <CheckCircle2 size={11} color="#16A34A" />}
+                                {active && <Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} />}
                             </div>
-                            {i < AGENT_ORDER.length - 1 && (
-                                <ChevronRight size={13} color="#CBD5E1" />
-                            )}
+                            {i < AGENT_ORDER.length - 1 && <ChevronRight size={12} color="#CBD5E1" />}
                         </div>
                     );
                 })}
@@ -274,7 +348,7 @@ export default function MultiAgentPanel({ sessionId }) {
                     value={task}
                     onChange={e => setTask(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="e.g. Build a FastAPI CRUD app for a bookstore with SQLAlchemy and pytest tests"
+                    placeholder="e.g. Build a FastAPI todo app with SQLite and pytest tests"
                     rows={3}
                     style={{
                         resize: 'vertical', padding: '12px 14px', borderRadius: 10,
@@ -284,7 +358,9 @@ export default function MultiAgentPanel({ sessionId }) {
                     }}
                 />
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: 11, color: '#94A3B8' }}>Ctrl+Enter to run · Files are written to your sandbox</span>
+                    <span style={{ fontSize: 11, color: '#94A3B8' }}>
+                        Ctrl+Enter to run · Files written to sandbox · SUMMARY.md auto-generated
+                    </span>
                     <button
                         onClick={handleRun}
                         disabled={loading || !task.trim()}
@@ -331,23 +407,21 @@ export default function MultiAgentPanel({ sessionId }) {
                 </div>
             )}
 
-            {/* Agent cards — appear progressively as each agent completes */}
-            {(hasResults || loading) && (
+            {/* Agent cards — append in order, coder can appear twice */}
+            {cards.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                    {AGENT_ORDER.map(key => {
-                        const data = results[key] || null;
-                        const isActive = activeAgent === key;
-                        const shouldShow = data !== null || isActive;
-                        if (!shouldShow) return null;
-                        return (
-                            <AgentCard
-                                key={key}
-                                agentKey={key}
-                                data={data}
-                                active={isActive || data !== null}
-                            />
-                        );
-                    })}
+                    {cards.map((card, i) => (
+                        <AgentCard
+                            key={i}
+                            agentKey={card.agentKey}
+                            data={card.data}
+                            isActive={false}
+                        />
+                    ))}
+                    {/* Show active spinner card for currently running agent not yet complete */}
+                    {activeAgent && !cards.some((c, i) => i === cards.length - 1 && c.agentKey === activeAgent) && (
+                        <AgentCard key="active" agentKey={activeAgent} data={null} isActive={true} />
+                    )}
                 </div>
             )}
         </div>

@@ -1,10 +1,8 @@
 import os
 from groq import Groq
-from dotenv import load_dotenv
 from typing import TypedDict, Generator
 import json
-
-load_dotenv()
+from langgraph.graph import StateGraph, END
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
@@ -61,6 +59,8 @@ def parse_plan(raw: str) -> dict:
     parsed = json.loads(cleaned)
 
     # Basic validation
+    if "task" not in parsed:
+        raise ValueError("Missing task")
     assert "task" in parsed and "subtasks" in parsed, "Missing keys"
     assert isinstance(parsed["subtasks"], list), "subtasks must be a list"
     assert 1 <= len(parsed["subtasks"]) <= 10, "Unexpected subtask count"
@@ -73,7 +73,6 @@ def run_planner_stream(task: str) -> Generator[str, None, None]:
     Runs the two-node LangGraph planner and yields SSE-friendly chunks.
     Yields status events so the frontend can show progress.
     """
-    from langgraph.graph import StateGraph, END
 
     # --- Build graph ---
     def node_llm(state: PlannerState) -> PlannerState:

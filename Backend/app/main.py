@@ -1,17 +1,17 @@
 #main.py
 import os
 import uuid
+from dotenv import load_dotenv
+load_dotenv()
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from groq import Groq, APIError
-from dotenv import load_dotenv
+
 from groq.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 from typing import cast
 from app.routers import codebase, tools, planner, multi_agent
-
-load_dotenv()
 
 SYSTEM_PROMPT = {
     "role": "system",

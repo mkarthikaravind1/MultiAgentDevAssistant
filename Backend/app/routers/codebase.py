@@ -3,9 +3,9 @@ from fastapi import APIRouter, UploadFile, File, Form
 from app.services.codebase_rag import index_codebase, query_codebase
 import shutil, os
 from groq import Groq
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 
-load_dotenv()
+# load_dotenv()
 
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
@@ -18,8 +18,11 @@ async def upload_codebase(session_id: str = Form(...), file: UploadFile = File(.
     with open(zip_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    stats = index_codebase(zip_path, session_id)
-    os.remove(zip_path)
+        try:
+            stats = index_codebase(zip_path, session_id)
+        finally:
+            if os.path.exists(zip_path):
+                os.remove(zip_path)
     return {"status": "indexed", **stats}
 
 @router.post("/ask")
@@ -34,7 +37,7 @@ Context:
 
 Question: {question}"""
 
-    response = response = groq_client.chat.completions.create(
+    response = groq_client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[{"role": "user", "content": prompt}],
     )

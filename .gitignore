@@ -7,6 +7,11 @@ __pycache__/
 node_modules/
 dist/
 
+tmp_sandbox/
+tmp_codebase/
+tmp_uploads/
+chroma_codebase_db/
+
 # Env
 .env
 .env.local
